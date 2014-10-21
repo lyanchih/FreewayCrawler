@@ -22,12 +22,7 @@ do
 done
 
 if [[ -n "$SORT_COL" ]]; then
-    cat ${FILDER:-data}/*.csv | grep -v freeway_id | sort -t, -nk ${SORT_COL}
+    cat ${FOLDER:-.}/*.csv | grep -v freeway_id | sort -t, -nk ${SORT_COL}
 else
-    cat ${FILDER:-data}/*.csv | grep -v freeway_id
+    cat ${FOLDER:-.}/*.csv | grep -v freeway_id
 fi
-
-
-
-
-

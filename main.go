@@ -8,6 +8,7 @@ import (
   "strconv"
   "strings"
   "./freeway"
+  "github.com/robfig/cron"
 )
 
 const (
@@ -62,6 +63,19 @@ func main() {
       log.Fatal(err)
     }
   }
+
+  f := func() {
+    log.Println("Fetch location info")
+    dumpLocationInfos(h)
+    log.Println(fmt.Sprintf("Save location info"))
+  }
   
-  dumpLocationInfos(h)
+  c := cron.New()
+  go func() {
+    f()
+    c.AddFunc("@every 5m", f)
+    c.Start()
+  }()
+  
+  select {}
 }
