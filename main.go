@@ -5,6 +5,7 @@ import (
   "os"
   "log"
   "fmt"
+  "strconv"
   "strings"
   "./freeway"
 )
@@ -28,7 +29,7 @@ func dumpLocationInfos(h *freeway.Highway) {
     log.Fatal("Do not response any location info")
   }
   
-  f, err := os.OpenFile(fmt.Sprintf("data/%s.csv", infos[0].Timestamp), os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0600)
+  f, err := os.OpenFile(fmt.Sprintf("data/%s.csv", strconv.FormatInt(infos[0].Timestamp.Unix(), 10)), os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0600)
   if err != nil {
     log.Fatal(err)
   }
@@ -39,7 +40,7 @@ func dumpLocationInfos(h *freeway.Highway) {
     log.Fatal(err)
   }
   for _, info := range infos {
-    strs := []string{info.Timestamp, info.LocationId,info.FreewayId}
+    strs := []string{strconv.FormatInt(info.Timestamp.Unix(), 10), info.FreewayId, info.LocationId}
     for _, speed := range info.Speeds {
       strs = append(strs, speed.DirectionId, speed.AverageSpeed)
     }

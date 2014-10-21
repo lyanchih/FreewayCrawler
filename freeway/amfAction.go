@@ -1,6 +1,8 @@
 package freeway
 
 import (
+  "time"
+  "strconv"
   "github.com/lyanchih/goamf"
 )
 
@@ -9,6 +11,25 @@ func checkString(v interface{}) string {
     return str
   }
   return ""
+}
+
+func checkTime(v interface{}) time.Time {
+  bs := []byte(checkString(v))
+  if len(bs) <= 2 {
+    return time.Unix(0, 0)
+  }
+  
+  sec, err := strconv.ParseInt(string(bs[:len(bs)-2]), 10, 64)
+  if err != nil {
+    return time.Unix(0, 0)
+  }
+  
+  nsec, err := strconv.ParseInt(string(append(bs[len(bs)-2:], []byte("0000000")...)), 10, 64)
+  if err != nil {
+    return time.Unix(0, 0)
+  }
+  
+  return time.Unix(sec, nsec)
 }
 
 func RequestGraphSecs(freewayId, locId string) ([]*GraphSection, error) {
@@ -66,7 +87,7 @@ func RequestGraphSecs(freewayId, locId string) ([]*GraphSection, error) {
     }
     
     graphSections = append(graphSections, &GraphSection{
-      checkString(obj.Values["timestamp"]),
+      checkTime(obj.Values["timestamp"]),
       sectionDatas,
     })
   }
@@ -148,7 +169,7 @@ func RequestLocationInfos(locIds []string) ([]*LocationInfo, error) {
     }
     
     locationInfos = append(locationInfos, &LocationInfo{
-      checkString(obj.Values["timestamp"]),
+      checkTime(obj.Values["timestamp"]),
       checkString(body.Values["locationId"]),
       checkString(body.Values["freewayId"]),
       checkString(body.Values["direction"]),

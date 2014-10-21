@@ -3,6 +3,7 @@ package freeway
 import (
   "io"
   "fmt"
+  "time"
   "bytes"
   "errors"
   "net/http"
@@ -19,7 +20,7 @@ type SectionData struct {
 }
 
 type GraphSection struct {
-  Timestamp string
+  Timestamp time.Time
   SectionDatas []*SectionData
 }
 
@@ -28,7 +29,8 @@ type Cctv struct {
 }
 
 type LocationInfo struct {
-  Timestamp, LocationId, FreewayId, Direction, Fmile, TMile, DisplayStartMile, DisplayEndMile string
+  Timestamp time.Time
+  LocationId, FreewayId, Direction, Fmile, TMile, DisplayStartMile, DisplayEndMile string
   Cctvs []*Cctv
   Speeds []*LocationSpeed
 }
