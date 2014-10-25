@@ -24,10 +24,25 @@ fi
 
 HEADER=$(awk 'NR = 1 {print; exit; }' $(ls -a ./data/*.csv | head -n1))"\n"
 
+function handleEncoding() {
+    local line=$@
+    local formats=$(echo ${line##Accept-Encoding: } | tr ',' ' ')
+    for format in $formats
+    do
+        case ${format%%;*} in
+            gzip)
+                compress='gzip'
+                ;;
+        esac
+    done
+}
+
 function parse_header {
     x=0
+    compress=""
     while read line[$x] && [ ${#line[$x]} -gt 1 ];
     do
+        if [ -z "${line[$x]##Accept-Encoding: *}" ]; then handleEncoding ${line[$x]}; fi
         x=$(($x+1))
     done
     
@@ -44,9 +59,17 @@ function parse_header {
     then
         body=$HEADER
     else
-        body=$HEADER$(awk 'FNR>1{print;}' $fs)
+        body=$(awk -v HEADER=$HEADER 'BEGIN {print HEADER} FNR>1 {print; }' $fs)
     fi
-    echo -en "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: http://null.jsbin.com\r\nContent-Length: $(echo -en $body | wc -c)\r\nContent-Type: text/csv\r\n\r\n$body">$out
+    body_len=$(echo -en $body | wc -c)
+    if [ -z "$compress" ];
+    then
+        echo -en "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: $body_len\r\nContent-Type: text/csv\r\n\r\n" | cat - <(echo -en $body | tr ' ' "\n")>$out
+    else
+        body_len=$(echo -en $body | tr ' ' "\n" | gzip -1c | wc -c)
+        echo -en "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: $body_len\r\nContent-Encoding: gzip\r\nContent-Type: text/csv\r\n\r\n" |
+        cat - <(echo -en $body | tr ' ' "\n" | gzip -1c) >$out
+    fi
 }
 
 while true
