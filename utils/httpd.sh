@@ -50,7 +50,28 @@ function parse_header {
     METHOD=$(echo ${line[0]} |cut -d" " -f1)
     REQUEST=$(echo ${line[0]} |cut -d" " -f2)
     HTTP_VERSION=$(echo ${line[0]} |cut -d" " -f3)
-    local $(echo ${REQUEST#/*\?} | sed 's/&/ /g')
+    echo $(date): $REQUEST
+    
+    if [ "$REQUEST" == "/highway.json" -o "$REQUEST" == "/highway.min.json" ];
+    then
+        file=${REQUEST##*/}
+        echo -en "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: $(ls -la $file | awk '{print $5}')\r\nContent-Type: application/json\r\n\r\n" | cat - $file >$out
+        return
+    elif [ "$REQUEST" == "/highway.min.json.gz" ];
+    then
+        file=${REQUEST##*/}
+        echo -en "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: $(ls -la $file | awk '{print $5}')\r\nContent-Encoding: gzip\r\nContent-Type: application/json\r\n\r\n" | cat - $file >$out
+        return
+    elif [ "${REQUEST#/api}" == "$REQUEST" ];
+    then
+        echo -en "HTTP/1.1 404 OK\r\n\r\n" >$out
+        return
+    fi
+    
+    if [ "${REQUEST#/*\?}" != "$REQUEST" ];
+    then
+        local $(echo ${REQUEST#/*\?} | sed 's/&/ /g')
+    fi
     
     from="$FOLDER/${from:=$(date +"%s")}.csv"
     to="$FOLDER/${to:=$(date +"%s")}.csv"
