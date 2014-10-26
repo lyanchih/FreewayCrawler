@@ -12,7 +12,7 @@ import (
 )
 
 const (
-  csvHeader = "timestamp,freeway_id,location_id,direction_1,speed_1,direction_2,speed_2,\n"
+  csvHeader = "timestamp,freeway_id,location_id,direction_1,speed_1,direction_2,speed_2\r\n"
 )
 
 func dumpLocationInfos(h *freeway.Highway) {
@@ -29,8 +29,9 @@ func dumpLocationInfos(h *freeway.Highway) {
   if len(infos) == 0 {
     log.Fatal("Do not response any location info")
   }
-  
-  f, err := os.OpenFile(fmt.Sprintf("data/%s.csv", strconv.FormatInt(infos[0].Timestamp.Unix(), 10)), os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0600)
+
+  unixTime := infos[0].Timestamp.Unix()
+  f, err := os.OpenFile(fmt.Sprintf("data/%s.csv", strconv.FormatInt(unixTime, 10)), os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0600)
   if err != nil {
     log.Fatal(err)
   }
@@ -41,12 +42,11 @@ func dumpLocationInfos(h *freeway.Highway) {
     log.Fatal(err)
   }
   for _, info := range infos {
-    strs := []string{strconv.FormatInt(info.Timestamp.Unix(), 10), info.FreewayId, info.LocationId}
+    strs := []string{strconv.FormatInt(unixTime, 10), info.FreewayId, info.LocationId}
     for _, speed := range info.Speeds {
       strs = append(strs, speed.DirectionId, speed.AverageSpeed)
     }
-    strs = append(strs, "\n")
-    _, err := io.WriteString(f, strings.Join(strs, ","))
+    _, err := io.WriteString(f, string(append([]byte(strings.Join(strs, ",")), '\r', '\n')))
     if err != nil {
       log.Fatal(err)
     }
