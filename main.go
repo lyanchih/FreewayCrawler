@@ -3,8 +3,9 @@ package main
 import (
   "io"
   "os"
-  "log"
   "fmt"
+  "log"
+  "path"
   "time"
   "bytes"
   "runtime"
@@ -14,6 +15,24 @@ import (
   "./freeway"
   "github.com/robfig/cron"
 )
+
+var saveFolder = ""
+
+func init() {
+  if folder := os.Getenv("SaveFolder"); folder != "" {
+    saveFolder = folder
+  } else {
+    saveFolder = "data"
+  }
+}
+
+func timeToFilename(date time.Time) string {
+  return path.Join(saveFolder, fmt.Sprintf("%4d%02d%02d%02d%02d.csv", date.Year(), date.Month(), date.Day(), date.Hour(), (int)(date.Minute()/5)*5))
+}
+
+func unixToFilename(sec int64) string {
+  return timeToFilename(time.Unix(sec, 0))
+}
 
 func dumpLocationInfos(h *freeway.Highway) error {
   locIds := make([]string, 0, len(h.Locations))
@@ -29,9 +48,9 @@ func dumpLocationInfos(h *freeway.Highway) error {
   if len(infos) == 0 {
     return err
   }
-  
+
   unixTime := infos[0].Timestamp.Unix()
-  f, err := os.OpenFile(fmt.Sprintf("data/%s.csv", strconv.FormatInt(unixTime, 10)), os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0600)
+  f, err := os.OpenFile(unixToFilename(unixTime), os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0600)
   if err != nil {
     return err
   }
