@@ -31,7 +31,7 @@ func timeToFilename(date time.Time) string {
 }
 
 func unixToFilename(sec int64) string {
-  return timeToFilename(time.Unix(sec, 0))
+  return timeToFilename(time.Unix(sec, 0).UTC())
 }
 
 func dumpLocationInfos(h *freeway.Highway) error {
@@ -48,7 +48,7 @@ func dumpLocationInfos(h *freeway.Highway) error {
   if len(infos) == 0 {
     return err
   }
-
+  
   unixTime := infos[0].Timestamp.Unix()
   f, err := os.OpenFile(unixToFilename(unixTime), os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0600)
   if err != nil {
