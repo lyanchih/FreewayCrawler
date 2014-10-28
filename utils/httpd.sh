@@ -23,6 +23,65 @@ then
 fi
 
 HEADER=$(awk 'NR = 1 {print; exit; }' $(ls -a ./data/*.csv | head -n1))"\n"
+OS=`uname -a`
+
+function unixToTime() {
+    if [[ $OS == Darwin* ]];
+    then
+        date -u -r $1 +"%Y%m%d%H%M" | awk '{printf "%d%02d", int(int($0)/100), int(int($0)%100/5)*5}'
+    else
+        date -u --date="@$1" +"%Y%m%d%H%M" | awk '{printf "%d%02d", int(int($0)/100), int(int($0)%100/5)*5}'
+    fi
+}
+
+function defaultFromTime() {
+    if [[ $OS == Darwin* ]];
+    then
+        date -v-1H +"%s"
+    else
+        date -d '1 hour ago' +"%s"
+    fi
+}
+
+function parseParameter() {
+    local request=$1
+    
+    for para in $(echo -en ${request#/*\?} | sed 's/&/ /g');
+    do
+        local key=${para%%=*} value=${para##*=}
+        case $key in
+            from)
+                if [ ${#value} == 10 ];
+                then
+                    from=$value
+                fi
+                ;;
+            to)
+                if [ ${#value} == 10 ];
+                then
+                    to=$value
+                fi
+                ;;
+        esac
+    done
+    if [ ${#from} == 0 ];
+    then
+        if [ ${#to} == 0 ];
+        then
+            from=$(defaultFromTime)
+        else
+            from=$((to-3600))
+        fi
+    fi
+    
+    if [ ${#to} == 0 ];
+    then
+        to=$((from+3600))
+    fi
+    
+    from=$(unixToTime $from)
+    to=$(unixToTime $to)
+}
 
 function handleEncoding() {
     local line=$@
@@ -38,6 +97,9 @@ function handleEncoding() {
 }
 
 function parse_header {
+    unset from
+    unset to
+    
     x=0
     compress=""
     while read line[$x] && [ ${#line[$x]} -gt 1 ];
@@ -68,14 +130,9 @@ function parse_header {
         return
     fi
     
-    if [ "${REQUEST#/*\?}" != "$REQUEST" ];
-    then
-        local $(echo ${REQUEST#/*\?} | sed 's/&/ /g')
-    fi
+    parseParameter $REQUEST
     
-    from="$FOLDER/${from:=$(date +"%s")}.csv"
-    to="$FOLDER/${to:=$(date +"%s")}.csv"
-    fs=$(ls -a $FOLDER/*.csv | awk -v from=$from -v to=$to '$1 >= from && $1 <= to { print $1} ' | sort)
+    fs=$(ls -a $FOLDER/*.csv | sed -E 's/^.*\/([[:digit:]]+)\.csv/\1/' | awk -v from=$from -v to=$to -v folder=$FOLDER '$1 >= from && $1 < to { printf "%s/%s.csv\n", folder, $1}')
     if [ -z "$fs" ];
     then
         body=$HEADER
